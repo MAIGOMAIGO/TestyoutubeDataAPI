@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<title>ytChatpop</title>
+</head>
+	<body>
+        <div class="search">
+            <label>channelURL:<input id="channelURL" type="text" name="channelURL"></label><br>
+            <label>apikey:<input id="apikey" type="text" name="apikey"></label><br>
+            <button type="button" onclick="getChannelId()">start</button><br>
+            <label id="liveTitle"></label><br>
+            <a id="liveUrl" href="."><img id="thumbnails" src=""></a><br>
+            <a id="liveChatpop" href="."></a>
+        </div>
+		<script>
+            function getChannelId(){
+                const channelURL = document.getElementById('channelURL').value;
+                const apikey = document.getElementById('apikey').value;
+
+                if(channelURL.indexOf("https://www.youtube.com/channel/") === 0){
+                    searchLive(channelURL.substr("https://www.youtube.com/channel/".length),apikey);
+                
+                }else if(channelURL.indexOf("https://www.youtube.com/c/") === 0){
+                    const xhr = new XMLHttpRequest();
+                    xhr.onload = function() {
+                        if(this.response.items[0] != null){
+                            searchLive(this.response.items[0].snippet.channelId,apikey);
+                        }else{
+                            console.log("このURLじゃ見つからないよ");
+                        }
+                    }
+
+                    xhr.open('GET',"https://www.googleapis.com/youtube/v3/search?part=snippet&type=channelId&key="
+                        +apikey+"&q="+channelURL.substr("https://www.youtube.com/c/".length));
+                    xhr.responseType = 'json';
+                    xhr.send();
+
+                }else if(channelURL.indexOf("https://www.youtube.com/user/") === 0){
+                    const xhr = new XMLHttpRequest();
+                    xhr.onload = function() {
+                        if(this.response.items[0] != null){
+                            searchLive(this.response.items[0].snippet.channelId,apikey);
+                        }else{
+                            console.log("このURLじゃ見つからないよ、多分");
+                        }
+                    }
+
+                    xhr.open('GET',"https://www.googleapis.com/youtube/v3/search?part=snippet&type=channelId&key="
+                        +apikey+"&q="+channelURL.substr("https://www.youtube.com/user/".length));
+                    xhr.responseType = 'json';
+                    xhr.send();
+
+                }else{
+                    console.log("channelURLが対応してないやつか、どこか間違ってます。");
+                }
+            }
+            function searchLive(channelId,apikey){
+                let url = 'https://www.googleapis.com/youtube/v3/search';
+                url += '?part=snippet';
+                url += '&channelId=' + channelId;
+                url += '&eventType=live&type=video';
+                url += '&key=' + apikey;
+
+                const xhr = new XMLHttpRequest();
+                xhr.onload = function() {
+                    // チャンネル名　ライブタイトル　ライブURL、チャットURLを張り付けて別窓で表示
+                    console.log(this.response);
+                    if(this.response.items[0] != null){
+                        const liveTitle = document.getElementById('liveTitle');
+                        liveTitle.innerText = this.response.items[0].snippet.title;
+
+                        const liveUrl = document.getElementById('liveUrl');
+                        liveUrl.href = "https://www.youtube.com/watch?v="+this.response.items[0].id.videoId;
+
+                        const thumbnail = document.getElementById('thumbnails');
+                        thumbnail.src = this.response.items[0].snippet.thumbnails.medium.url;
+
+                        const liveChatpop = document.getElementById('liveChatpop');
+                        liveChatpop.innerText = "https://www.youtube.com/live_chat?is_popout=1&v="+this.response.items[0].id.videoId;
+                        liveChatpop.href = "https://www.youtube.com/live_chat?is_popout=1&v="+this.response.items[0].id.videoId;
+
+                    }else{
+                        alert("今配信してないね");
+                    }
+                }
+                xhr.open('GET',url);
+                xhr.responseType = 'json';
+                xhr.send();
+            }
+        </script>
+	</body>
+</html>
